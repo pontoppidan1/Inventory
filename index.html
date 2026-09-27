@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SATO Lager</title>
+<meta name="description" content="Lager og salg for SATO Matcha">
+<meta name="theme-color" content="#f6f5f1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0d0d0d" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="SATO Lager">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%233d6b35'/%3E%3Cpath d='M9 20c0-5 3-9 7-11 4 2 7 6 7 11a7 3 0 0 1-14 0z' fill='%23e7efe2'/%3E%3C/svg%3E">
+<style>
+:root{
+  color-scheme:light;
+  --bg:#f6f5f1; --surface:#fcfcfb; --surface-2:#efeee9; --ink:#0b0b0b; --ink-2:#52514e; --muted:#77756f; --line:#e1e0d9;
+  --ring:rgba(11,11,11,.09);
+  --accent:#3d6b35; --accent-hover:#335a2c; --accent-ink:#fff; --accent-soft:#e6eee0; --accent-text:#2f5629;
+  --good:#0ca30c; --warn:#fab219; --serious:#ec835a; --crit:#d03b3b; --crit-text:#b42323;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0d0d0d; --surface:#1a1a19; --surface-2:#262624; --ink:#fff; --ink-2:#c3c2b7; --muted:#9a988f; --line:#2c2c2a;
+    --ring:rgba(255,255,255,.09);
+    --accent:#7fb069; --accent-hover:#93c07d; --accent-ink:#0d1a0a; --accent-soft:#223020; --accent-text:#a5cf92; --crit-text:#ef7b7b;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0d0d0d; --surface:#1a1a19; --surface-2:#262624; --ink:#fff; --ink-2:#c3c2b7; --muted:#9a988f; --line:#2c2c2a;
+  --ring:rgba(255,255,255,.09);
+  --accent:#7fb069; --accent-hover:#93c07d; --accent-ink:#0d1a0a; --accent-soft:#223020; --accent-text:#a5cf92; --crit-text:#ef7b7b;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+a{color:var(--accent-text)}
+.tnum{font-variant-numeric:tabular-nums}
+.wrap{max-width:560px;margin:0 auto;padding:0 16px}
+
+header{position:sticky;top:0;z-index:20;background:var(--bg);padding-top:env(safe-area-inset-top)}
+.top{display:flex;align-items:center;gap:10px;height:56px}
+.top h1{font-size:19px;margin:0;letter-spacing:-.015em;flex:1}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--muted);flex:none}
+.dot.ok{background:var(--good)} .dot.busy{background:var(--warn)} .dot.err{background:var(--crit)} .dot.local{background:var(--serious)}
+.syncbtn{display:flex;align-items:center;gap:7px;border:0;background:var(--surface-2);border-radius:99px;padding:6px 11px;font-size:13px;color:var(--ink-2);max-width:190px}
+.syncbtn span:last-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.iconbtn{border:0;background:transparent;padding:8px;border-radius:10px;color:var(--ink-2);line-height:0}
+.iconbtn:hover{background:var(--surface-2)}
+
+main{padding:4px 0 calc(160px + env(safe-area-inset-bottom))}
+.view{display:none}.view.active{display:block}
+h2{font-size:15px;margin:22px 0 8px;color:var(--ink-2);font-weight:650}
+.card{background:var(--surface);border:1px solid var(--ring);border-radius:16px;padding:16px}
+.muted{color:var(--muted)} .small{font-size:14px}
+
+/* Tilføj */
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--surface-2);padding:4px;border-radius:14px;gap:4px}
+.seg button{border:0;background:transparent;padding:12px;border-radius:11px;font-weight:650;font-size:16px;color:var(--ink-2)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tile{border:1.5px solid var(--line);background:var(--surface);border-radius:14px;padding:12px;text-align:left;min-height:68px;display:flex;flex-direction:column;justify-content:center}
+.tile b{font-weight:650;font-size:15px;line-height:1.25}
+.tile span{font-size:13px;color:var(--muted);margin-top:2px}
+.tile[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.tile[aria-pressed="true"] b{color:var(--accent-text)}
+.more{border:0;background:transparent;color:var(--accent-text);font-weight:600;padding:10px 2px;font-size:14px}
+.stepper{display:grid;grid-template-columns:64px 1fr 64px;border:1.5px solid var(--line);border-radius:14px;overflow:hidden;background:var(--surface)}
+.stepper button{border:0;background:var(--surface-2);font-size:28px;font-weight:400;height:60px}
+.stepper button:active{background:var(--line)}
+.stepper input{border:0;background:transparent;text-align:center;font-size:28px;font-weight:700;width:100%;min-width:0}
+.stepper input:focus{outline:none}
+.quick{display:flex;gap:6px;margin-top:8px}
+.quick button{flex:1;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 0;font-weight:600;font-size:14px;color:var(--ink-2)}
+.in{width:100%;padding:12px 13px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);min-height:48px;font-size:16px}
+.in:focus,.tile:focus-visible,.seg button:focus-visible,.btn:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:7px 13px;font-size:14px;font-weight:550}
+.chip[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-text)}
+.datebtn{border:0;background:transparent;color:var(--ink-2);padding:6px 0;font-size:14px}
+.datebtn u{color:var(--accent-text);text-decoration:none;font-weight:600}
+.savebar{position:fixed;left:0;right:0;bottom:calc(64px + env(safe-area-inset-bottom));z-index:15;padding:10px 0;background:linear-gradient(to top,var(--bg) 70%,transparent)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1.5px solid var(--line);background:var(--surface);border-radius:12px;padding:10px 16px;font-weight:600;min-height:44px}
+.btn.primary{background:var(--accent);border-color:transparent;color:var(--accent-ink)}
+.btn.primary:hover{background:var(--accent-hover)}
+.btn.primary:disabled{opacity:.45}
+.btn.big{width:100%;min-height:56px;font-size:17px;border-radius:14px}
+.btn.danger{color:var(--crit-text)}
+
+/* Lager */
+.list{background:var(--surface);border:1px solid var(--ring);border-radius:16px;overflow:hidden}
+.row{display:flex;align-items:center;gap:12px;padding:13px 14px;border-top:1px solid var(--line);width:100%;border-left:0;border-right:0;border-bottom:0;background:transparent;text-align:left}
+.row:first-child{border-top:0}
+button.row:active{background:var(--surface-2)}
+.row .grow{flex:1;min-width:0}
+.row .name{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .sub{font-size:13px;color:var(--muted);margin-top:1px}
+.row .qty{font-size:22px;font-weight:700;letter-spacing:-.02em;text-align:right;min-width:48px}
+.row .qty small{display:block;font-size:11px;font-weight:500;color:var(--muted);letter-spacing:0}
+.st{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;padding:2px 8px 2px 6px;border-radius:99px;margin-top:4px}
+.st svg{flex:none}
+.st.crit{background:color-mix(in srgb,var(--crit) 14%,transparent);color:var(--crit-text)}
+.st.serious{background:color-mix(in srgb,var(--serious) 20%,transparent)}
+.st.warn{background:color-mix(in srgb,var(--warn) 22%,transparent)}
+.neg{color:var(--crit-text)}
+
+/* Historik */
+.day{font-size:13px;font-weight:650;color:var(--muted);margin:18px 2px 6px}
+.day::first-letter{text-transform:uppercase}
+.sign{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:750;flex:none;font-size:15px}
+.sign.out{background:var(--surface-2);color:var(--ink-2)}
+.sign.in{background:var(--accent-soft);color:var(--accent-text)}
+.sign.count{background:color-mix(in srgb,var(--warn) 22%,transparent)}
+
+/* Bundmenu */
+nav.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+nav.tabbar .wrap{display:grid;grid-template-columns:repeat(3,1fr);height:64px}
+nav.tabbar a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-decoration:none;color:var(--muted);font-size:12px;font-weight:600}
+nav.tabbar a[aria-current="page"]{color:var(--accent-text)}
+
+/* Indstillinger */
+label.lbl{display:block;font-size:14px;font-weight:600;color:var(--ink-2);margin:12px 0 6px}
+details summary{cursor:pointer;font-weight:600;padding:4px 0}
+.hint{font-size:13px;color:var(--muted);margin-top:6px}
+.items-edit .row{flex-wrap:wrap}
+.items-edit input.in{min-height:40px;padding:8px 10px;font-size:15px}
+.num-in{width:78px!important;text-align:right}
+
+.toast{position:fixed;left:50%;bottom:calc(150px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(10px);opacity:0;background:var(--ink);color:var(--bg);padding:12px 16px;border-radius:12px;display:flex;gap:14px;align-items:center;transition:.2s;z-index:50;max-width:calc(100vw - 32px);pointer-events:none;font-size:15px}
+.toast.show{opacity:1;transform:translateX(-50%);pointer-events:auto}
+.toast button{background:transparent;border:0;color:inherit;font-weight:700;text-decoration:underline}
+dialog{border:0;border-radius:18px;background:var(--surface);color:var(--ink);padding:20px;width:min(420px,calc(100vw - 32px))}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+.banner{display:flex;gap:10px;align-items:center;padding:10px 12px;border-radius:12px;background:color-mix(in srgb,var(--serious) 16%,var(--surface));font-size:14px;margin:4px 0 8px}
+@media (min-width:700px){ .tiles{grid-template-columns:1fr 1fr 1fr} }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap top">
+    <h1 id="title">SATO Lager</h1>
+    <button class="syncbtn" id="syncBtn" title="Status"><span class="dot" id="syncDot"></span><span id="syncText">Indlæser…</span></button>
+    <a class="iconbtn" href="#indstillinger" aria-label="Indstillinger"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></a>
+  </div>
+</header>
+
+<main class="wrap">
+  <div id="banner"></div>
+
+  <!-- TILFØJ -->
+  <section class="view" id="v-tilfoj">
+    <div class="seg" id="kindSeg">
+      <button type="button" data-kind="out" aria-pressed="true">Salg</button>
+      <button type="button" data-kind="in" aria-pressed="false">Indkøb</button>
+    </div>
+    <h2>Vare</h2>
+    <div class="tiles" id="tiles"></div>
+    <button type="button" class="more" id="moreBtn"></button>
+    <h2>Antal</h2>
+    <div class="stepper">
+      <button type="button" data-step="-1" aria-label="Minus">−</button>
+      <input id="qty" type="number" inputmode="numeric" min="1" step="any" value="1" aria-label="Antal">
+      <button type="button" data-step="1" aria-label="Plus">+</button>
+    </div>
+    <div class="quick" id="quick"></div>
+    <h2 id="whoLabel">Kunde</h2>
+    <input class="in" id="who" list="whoList" autocomplete="off" placeholder="Fx Kismet">
+    <datalist id="whoList"></datalist>
+    <div class="chips" id="whoChips"></div>
+    <div style="margin-top:12px">
+      <button type="button" class="datebtn" id="dateBtn"></button>
+      <input class="in" id="date" type="date" hidden style="margin-top:6px">
+    </div>
+    <div class="savebar"><div class="wrap"><button class="btn primary big" id="saveBtn" type="button">Gem</button></div></div>
+  </section>
+
+  <!-- LAGER -->
+  <section class="view" id="v-lager">
+    <div id="stock"></div>
+    <p class="hint" style="margin-top:14px">Tryk på en vare for at rette beholdningen efter en optælling. "Rækker til" bruger forventet salg pr. måned (kan sættes under ⚙︎). Er der ikke sat noget, bruges salget de sidste 90 dage.</p>
+  </section>
+
+  <!-- HISTORIK -->
+  <section class="view" id="v-historik">
+    <input class="in" id="search" type="search" placeholder="Søg vare, kunde…" style="margin-top:4px">
+    <div id="hist"></div>
+    <div style="text-align:center;margin-top:14px"><button class="btn" id="histMore" hidden>Vis flere</button></div>
+  </section>
+
+  <!-- INDSTILLINGER -->
+  <section class="view" id="v-indstillinger">
+    <h2 style="margin-top:8px">Forbindelse</h2>
+    <div class="card">
+      <div id="ghState" class="small"></div>
+      <details id="ghForm" style="margin-top:8px">
+        <summary class="small">Forbind til GitHub</summary>
+        <p class="hint">Data ligger i et privat GitHub-repo. Nøglen gemmes kun på denne enhed, så den skal indtastes én gang pr. telefon eller computer.</p>
+        <label class="lbl" for="ghOwner">GitHub-bruger</label><input class="in" id="ghOwner" autocapitalize="off" autocorrect="off" placeholder="fx alfredpontoppidan">
+        <label class="lbl" for="ghRepo">Data-repo</label><input class="in" id="ghRepo" autocapitalize="off" autocorrect="off" placeholder="sato-lager-data">
+        <label class="lbl" for="ghToken">Nøgle</label><input class="in" id="ghToken" type="password" autocomplete="off" placeholder="github_pat_…">
+        <p class="hint">Lav nøglen på <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">github.com/settings/personal-access-tokens/new</a>. Vælg kun data-repoet, og giv <b>Contents</b> og <b>Actions</b>: Read and write.</p>
+        <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+          <button class="btn primary" id="ghConnect" type="button">Forbind</button>
+          <button class="btn danger" id="ghForget" type="button">Glem nøgle</button>
+        </div>
+        <div id="ghMsg" class="small" style="margin-top:8px"></div>
+      </details>
+    </div>
+
+    <h2>Shopify</h2>
+    <div class="card">
+      <div id="shopState" class="small"></div>
+      <button class="btn" id="shopNow" type="button" style="margin-top:10px;width:100%">Hent Shopify-ordrer nu</button>
+      <div id="shopMsg" class="small" style="margin-top:8px"></div>
+    </div>
+
+    <h2>Varer</h2>
+    <p class="hint" style="margin-top:-2px">"Pr. md" er forventet salg pr. måned (tom = brug faktisk salg). "Advar" er den beholdning, hvor varen markeres som lav.</p>
+    <div class="list items-edit" id="itemsEdit"></div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <input class="in" id="newItem" placeholder="Ny vare">
+      <button class="btn" id="addItem" type="button">Tilføj</button>
+    </div>
+
+    <h2>Backup</h2>
+    <button class="btn" id="dlJson" type="button">Download data.json</button>
+  </section>
+</main>
+
+<nav class="tabbar" aria-label="Sider">
+  <div class="wrap">
+    <a href="#tilfoj"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>Tilføj</a>
+    <a href="#lager"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>Lager</a>
+    <a href="#historik"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg>Historik</a>
+  </div>
+</nav>
+
+<div class="toast" id="toast" role="status" aria-live="polite"><span id="toastText"></span><button id="toastUndo" hidden>Fortryd</button></div>
+
+<dialog id="countDlg">
+  <form method="dialog">
+    <div style="font-weight:700;font-size:18px" id="countTitle"></div>
+    <p class="small muted" id="countSub" style="margin:4px 0 14px"></p>
+    <div class="stepper">
+      <button type="button" data-cstep="-1" aria-label="Minus">−</button>
+      <input id="countQty" type="number" inputmode="numeric" step="any" min="0" aria-label="Optalt antal">
+      <button type="button" data-cstep="1" aria-label="Plus">+</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px">
+      <button class="btn" value="cancel">Annullér</button>
+      <button class="btn primary" value="ok">Gem optælling</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+'use strict';
+const LS={gh:'sato.gh',draft:'sato.draft'};
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const lsGet=(k,d)=>{try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch{return d}};
+const lsSet=(k,v)=>{try{v==null?localStorage.removeItem(k):localStorage.setItem(k,JSON.stringify(v))}catch{}};
+const today=()=>new Date().toLocaleDateString('sv-SE');
+const addDays=(iso,n)=>{const d=new Date(iso+'T12:00:00');d.setDate(d.getDate()+n);return d.toLocaleDateString('sv-SE')};
+const MONTHS=['jan','feb','mar','apr','maj','jun','jul','aug','sep','okt','nov','dec'];
+const fmtDate=iso=>{const [y,m,d]=iso.split('-');return `${+d}. ${MONTHS[+m-1]}`+(y!==today().slice(0,4)?' '+y:'')};
+const fmtN=(n,dec=1)=>(Math.round(n*10**dec)/10**dec).toLocaleString('da-DK',{maximumFractionDigits:dec});
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const byDate=(a,b)=>a.date<b.date?-1:a.date>b.date?1:0;
+const ICON={
+  warn:'<svg width="12" height="12" viewBox="0 0 12 12"><path d="M6 .8l5.4 10H.6z" fill="var(--warn)"/><path d="M6 4.3v3" stroke="#000" stroke-width="1.4" stroke-linecap="round"/><circle cx="6" cy="9" r=".8" fill="#000"/></svg>',
+  serious:'<svg width="12" height="12" viewBox="0 0 12 12"><rect x="1" y="1" width="10" height="10" rx="2" transform="rotate(45 6 6)" fill="var(--serious)"/><path d="M6 3.4v3.2" stroke="#000" stroke-width="1.4" stroke-linecap="round"/><circle cx="6" cy="8.4" r=".8" fill="#000"/></svg>',
+  crit:'<svg width="12" height="12" viewBox="0 0 12 12"><circle cx="6" cy="6" r="6" fill="var(--crit)"/><path d="M4 4l4 4M8 4l-4 4" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg>'
+};
+
+/* ============ Data ============ */
+let D=null, STOCK={};
+const meta={sha:null,dirty:false,deleted:[],configDirty:false,msg:''};
+let gh=lsGet(LS.gh,null);
+const F={kind:'out',item:null,showAll:false,dateOpen:false};
+let histLimit=80;
+
+function normalize(d){
+  d.settings=d.settings||{}; d.items=d.items||[]; d.movements=d.movements||[];
+  d.shopifyMap=d.shopifyMap||{}; d.shopifyTitles=d.shopifyTitles||{};
+  for(const i of d.items){
+    i.consumes=i.consumes||{};
+    // Overfør evt. gammel kundebaseret prognose til ét tal pr. vare
+    if(i.perMonth===undefined){
+      const rows=(d.forecast||[]).filter(f=>f.item===i.id);
+      i.perMonth=rows.length&&(d.forecastMode?.[i.id]||'manual')==='manual'?Math.round(rows.reduce((a,f)=>a+(+f.perMonth||0),0)*10)/10:null;
+    }
+  }
+  return d;
+}
+const itemById=id=>D.items.find(i=>i.id===id);
+const itemName=id=>itemById(id)?.name||id;
+const SELL_CATS=['Matcha','Tilbehør','Sæt'];
+const CAT_ORDER=['Matcha','Tilbehør','Sæt','Klistermærker','Andet'];
+const catRank=c=>{const i=CAT_ORDER.indexOf(c);return i<0?3.5:i};
+
+// Et salg trækker varen selv (medmindre det er et sæt) og alt den forbruger, fx klistermærker
+function expandOut(id,q,ev,d,depth){
+  const it=itemById(id); if(!it||depth>6) return;
+  if(!it.kit) ev.push({d,item:id,delta:-q,o:1});
+  for(const [k,v] of Object.entries(it.consumes||{})) expandOut(k,q*v,ev,d,depth+1);
+}
+function rebuild(){
+  const ev=[], t=today();
+  for(const m of D.movements){
+    const it=itemById(m.item); if(!it||m.date>t) continue; const q=+m.qty||0;
+    if(m.kind==='in'&&!it.kit) ev.push({d:m.date,item:m.item,delta:q,o:0});
+    else if(m.kind==='out') expandOut(m.item,q,ev,m.date,0);
+    else if(m.kind==='count'&&!it.kit) ev.push({d:m.date,item:m.item,set:q,o:2});
+  }
+  ev.sort((a,b)=>a.d<b.d?-1:a.d>b.d?1:a.o-b.o);
+  STOCK={}; D.items.forEach(i=>STOCK[i.id]=0);
+  for(const e of ev) STOCK[e.item]=e.set!=null?e.set:(STOCK[e.item]||0)+e.delta;
+}
+function actualRate(id){
+  const t=today(),from=addDays(t,-90); let s=0;
+  for(const m of D.movements) if(m.kind==='out'&&m.item===id&&m.date>from&&m.date<=t) s+=+m.qty||0;
+  return s/90*30.44;
+}
+function ownRate(id){const it=itemById(id); return it.perMonth!=null&&it.perMonth!==''?+it.perMonth:actualRate(id)}
+function rate(id,seen=new Set()){
+  if(seen.has(id)) return 0; seen.add(id);
+  let r=ownRate(id);
+  for(const p of D.items){const k=p.consumes?.[id]; if(k) r+=rate(p.id,new Set(seen))*k}
+  return r;
+}
+function status(id){
+  const it=itemById(id), s=STOCK[id]||0, r=rate(id);
+  const lead=+(it.lead??30)||0;
+  const runout=r>0?addDays(today(),Math.floor(Math.max(0,s)/(r/30.44))):null;
+  const orderBy=runout?addDays(runout,-lead):null;
+  let level=null,label='';
+  if(s<0){level='crit';label='I minus'}
+  else if(s===0&&r>0){level='crit';label='Udsolgt'}
+  else if(orderBy&&orderBy<=today()){level='serious';label='Bestil nu'}
+  else if(it.alert&&s<=+it.alert){level='warn';label='Lav'}
+  return {s,r,runout,level,label};
+}
+
+/* ============ GitHub-lagring ============ */
+const b64enc=s=>{const b=new TextEncoder().encode(s);let bin='';for(let i=0;i<b.length;i+=0x8000)bin+=String.fromCharCode.apply(null,b.subarray(i,i+0x8000));return btoa(bin)};
+const b64dec=s=>new TextDecoder().decode(Uint8Array.from(atob(s.replace(/\s/g,'')),c=>c.charCodeAt(0)));
+const ghOn=()=>!!(gh&&gh.owner&&gh.repo&&gh.token);
+const repoUrl=()=>`https://api.github.com/repos/${encodeURIComponent(gh.owner)}/${encodeURIComponent(gh.repo)}`;
+const fileUrl=()=>repoUrl()+'/contents/'+(gh.path||'data.json').split('/').map(encodeURIComponent).join('/');
+const H=(accept)=>({Authorization:'Bearer '+gh.token,Accept:accept||'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'});
+function ghErr(s){return s===401?'Nøglen virker ikke. Tjek at den er kopieret rigtigt.':s===403?'Nøglen mangler rettigheder til repoet.':s===404?'Fandt ikke repoet eller data.json. Tjek navnene.':'GitHub-fejl '+s}
+async function ghGet(){
+  const q='?ref='+encodeURIComponent(gh.branch||'main')+'&t='+Date.now();
+  const res=await fetch(fileUrl()+q,{headers:H(),cache:'no-store'});
+  if(res.status===404) return {data:null,sha:null,missing:true};
+  if(!res.ok) throw new Error(ghErr(res.status));
+  const j=await res.json(); let txt;
+  if(j.content&&j.encoding==='base64') txt=b64dec(j.content);
+  else{const r2=await fetch(fileUrl()+q,{headers:H('application/vnd.github.raw+json'),cache:'no-store'}); if(!r2.ok) throw new Error(ghErr(r2.status)); txt=await r2.text()}
+  return {data:normalize(JSON.parse(txt)),sha:j.sha};
+}
+async function ghPut(data,sha,msg){
+  const body={message:msg||'Opdater lager',content:b64enc(JSON.stringify(data,null,1)),branch:gh.branch||'main'}; if(sha) body.sha=sha;
+  const res=await fetch(fileUrl(),{method:'PUT',headers:{...H(),'Content-Type':'application/json'},body:JSON.stringify(body)});
+  if(!res.ok){const e=new Error(ghErr(res.status));e.status=res.status;throw e}
+  return (await res.json()).content.sha;
+}
+// Fletter egne ændringer ind i nyeste version (fx hvis Shopify-sync eller en anden har gemt imens)
+function merge(remote,local){
+  if(!remote) return local;
+  const byId=new Map(remote.movements.map(m=>[m.id,m]));
+  for(const m of local.movements) byId.set(m.id,m);
+  for(const id of meta.deleted) byId.delete(id);
+  const out=meta.configDirty?{...local}:{...remote};
+  out.movements=[...byId.values()].sort(byDate);
+  const ids=new Set(out.items.map(i=>i.id));
+  out.items=[...out.items,...[...remote.items,...local.items].filter(i=>!ids.has(i.id)&&ids.add(i.id))];
+  out.shopifyMap={...local.shopifyMap,...remote.shopifyMap};
+  out.shopifyTitles={...local.shopifyTitles,...remote.shopifyTitles};
+  out.settings={...out.settings,shopifySync:remote.settings?.shopifySync||local.settings?.shopifySync};
+  return out;
+}
+const saveDraft=()=>lsSet(LS.draft,meta.dirty?{data:D,deleted:meta.deleted,configDirty:meta.configDirty}:null);
+let timer=null,saving=false,again=false;
+function commit(msg,config){
+  D.updated=new Date().toISOString(); meta.dirty=true; if(config) meta.configDirty=true; meta.msg=msg||meta.msg;
+  saveDraft(); rebuild(); render();
+  if(ghOn()){clearTimeout(timer); timer=setTimeout(push,config?1200:300); setSync('busy','Gemmer…')}
+  else setSync('local','Kun på denne enhed');
+}
+async function push(){
+  if(saving){again=true;return}
+  saving=true; setSync('busy','Gemmer…');
+  try{
+    for(let a=0;a<3;a++){
+      const r=await ghGet();
+      const data=(r.sha&&r.sha===meta.sha)?D:merge(r.data,D);
+      try{
+        meta.sha=await ghPut(data,r.sha,meta.msg);
+        D=data; meta.dirty=false; meta.deleted=[]; meta.configDirty=false; meta.msg='';
+        saveDraft(); rebuild(); render(); setSync('ok','Gemt');
+        break;
+      }catch(e){ if((e.status===409||e.status===422)&&a<2) continue; throw e }
+    }
+  }catch(e){ setSync('err','Ikke gemt'); toast('Kunne ikke gemme: '+e.message) }
+  finally{ saving=false; if(again){again=false; if(meta.dirty) push()} }
+}
+async function load(quiet){
+  if(!quiet) setSync('busy','Henter…');
+  const draft=lsGet(LS.draft,null); let remote=null,err=null;
+  try{
+    if(ghOn()){const r=await ghGet(); remote=r.data; meta.sha=r.sha}
+    else{const res=await fetch('data.json?t='+Date.now(),{cache:'no-store'}); if(res.ok) remote=normalize(await res.json())}
+  }catch(e){err=e}
+  if(draft?.data){meta.deleted=draft.deleted||[];meta.configDirty=!!draft.configDirty;meta.dirty=true;D=normalize(remote?merge(remote,normalize(draft.data)):normalize(draft.data))}
+  else if(remote){D=remote;meta.dirty=false}
+  else if(!D){D=normalize({items:[],movements:[]})}
+  rebuild(); render();
+  if(err) setSync('err',ghOn()?'Fejl':'Ingen data');
+  else if(meta.dirty&&ghOn()) push();
+  else if(meta.dirty) setSync('local','Kun på denne enhed');
+  else setSync(ghOn()?'ok':'local',ghOn()?'Opdateret':'Ikke forbundet');
+  if(err&&ghOn()) toast(err.message);
+}
+function setSync(cls,text){$('#syncDot').className='dot '+cls;$('#syncText').textContent=text;renderBanner()}
+
+/* ============ Visning ============ */
+function view(){const h=location.hash.slice(1);return ['tilfoj','lager','historik','indstillinger'].includes(h)?h:'tilfoj'}
+function route(){
+  const v=view();
+  $$('.view').forEach(s=>s.classList.toggle('active',s.id==='v-'+v));
+  $$('nav.tabbar a').forEach(a=>a.getAttribute('href')==='#'+v?a.setAttribute('aria-current','page'):a.removeAttribute('aria-current'));
+  $('.savebar').hidden=v!=='tilfoj';
+  window.scrollTo(0,0);
+  if(D) render();
+}
+function render(){
+  $('#title').textContent=(D.settings.company||'SATO').replace(/ Matcha$/,'')+' Lager';
+  renderBanner();
+  const v=view();
+  if(v==='tilfoj') renderAdd();
+  if(v==='lager') renderStock();
+  if(v==='historik') renderHist();
+  if(v==='indstillinger') renderSettings();
+}
+function renderBanner(){
+  $('#banner').innerHTML=D&&!ghOn()?`<div class="banner">${ICON.serious}<div style="flex:1">Gemmes kun på denne enhed.</div><a href="#indstillinger" style="font-weight:600">Forbind</a></div>`:'';
+}
+
+/* ---- Tilføj ---- */
+function tileItems(){
+  // Salg: varer der sælges. Indkøb: alt med eget lager. Mest brugte først.
+  const use={}; for(const m of D.movements) use[m.item]=(use[m.item]||0)+1;
+  const list=D.items.filter(i=>F.kind==='out'?(SELL_CATS.includes(i.cat)||i.kit):!i.kit);
+  return list.sort((a,b)=>catRank(a.cat)-catRank(b.cat)||(use[b.id]||0)-(use[a.id]||0));
+}
+function renderAdd(){
+  $$('#kindSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.kind===F.kind));
+  const all=tileItems();
+  const main=all.filter(i=>i.cat==='Matcha'||(F.kind==='out'&&SELL_CATS.includes(i.cat)));
+  let shown=F.showAll||main.length<2?all:main;
+  if(F.item&&!shown.some(i=>i.id===F.item)){ if(all.some(i=>i.id===F.item)) shown=all; else F.item=null }
+  if(!F.item&&shown.length) F.item=shown[0].id;
+  $('#tiles').innerHTML=shown.map(i=>`<button type="button" class="tile" data-item="${esc(i.id)}" aria-pressed="${F.item===i.id}"><b>${esc(i.name)}</b><span>${i.kit?'Sæt':`${fmtN(STOCK[i.id]||0)} på lager`}</span></button>`).join('')||'<p class="muted">Ingen varer. Tilføj dem under ⚙︎.</p>';
+  $('#moreBtn').hidden=all.length===main.length;
+  $('#moreBtn').textContent=F.showAll?'Vis færre':`Flere varer (${all.length-main.length})`;
+  const q=$('#qty');
+  $('#quick').innerHTML=(F.kind==='in'?[10,25,50,100]:[1,2,5,10]).map(n=>`<button type="button" data-set="${n}">${n}</button>`).join('');
+  $('#whoLabel').innerHTML=(F.kind==='in'?'Leverandør':'Kunde')+' <span class="muted" style="font-weight:500">(valgfri)</span>';
+  $('#who').placeholder=F.kind==='in'?'Fx leverandør':'Fx Kismet';
+  const cnt=new Map(); for(const m of D.movements) if(m.customer&&m.src!=='shopify'&&m.kind===F.kind) cnt.set(m.customer,(cnt.get(m.customer)||0)+1);
+  const top=[...cnt.entries()].sort((a,b)=>b[1]-a[1]).map(x=>x[0]);
+  $('#whoList').innerHTML=top.map(c=>`<option value="${esc(c)}">`).join('');
+  $('#whoChips').innerHTML=top.slice(0,5).map(c=>`<button type="button" class="chip" data-who="${esc(c)}" aria-pressed="${$('#who').value===c}">${esc(c)}</button>`).join('');
+  const d=$('#date').value||today();
+  $('#dateBtn').innerHTML=`Dato: <b>${d===today()?'i dag':fmtDate(d)}</b> · <u>skift</u>`;
+  $('#dateBtn').hidden=F.dateOpen; $('#date').hidden=!F.dateOpen;
+  const it=itemById(F.item), n=parseFloat(q.value)||0;
+  $('#saveBtn').textContent=it?`${F.kind==='in'?'Gem indkøb':'Gem salg'}: ${fmtN(n)} × ${it.name}`:'Vælg en vare';
+  $('#saveBtn').disabled=!it||!(n>0);
+}
+function save(){
+  const qty=parseFloat($('#qty').value); const it=itemById(F.item);
+  if(!it||!(qty>0)) return;
+  const who=$('#who').value.trim();
+  const m={id:uid(),date:$('#date').value||today(),kind:F.kind,item:it.id,qty,channel:F.kind==='out'?'Salg':'',customer:who,note:'',src:'manual'};
+  D.movements.push(m); D.movements.sort(byDate);
+  const txt=`${F.kind==='in'?'Indkøb':'Salg'}: ${fmtN(qty)} × ${it.name}${who?' – '+who:''}`;
+  $('#qty').value=1; $('#who').value='';
+  commit(txt);
+  toast('Gemt ✓',()=>remove(m.id,true));
+}
+function remove(id,silent){
+  const i=D.movements.findIndex(m=>m.id===id); if(i<0) return; const m=D.movements[i];
+  if(!silent&&!confirm(`Slet ${fmtN(+m.qty)} × ${itemName(m.item)} (${fmtDate(m.date)})?`)) return;
+  D.movements.splice(i,1); meta.deleted.push(id);
+  commit(`Slettet: ${fmtN(+m.qty)} × ${itemName(m.item)} ${m.date}`);
+  toast(silent?'Fortrudt':'Slettet',silent?null:()=>{D.movements.push(m);D.movements.sort(byDate);meta.deleted=meta.deleted.filter(x=>x!==id);commit('Fortryd sletning')});
+}
+
+/* ---- Lager ---- */
+function renderStock(){
+  const items=D.items.filter(i=>!i.kit);
+  const cats=[...new Set(items.map(i=>i.cat))].sort((a,b)=>catRank(a)-catRank(b));
+  $('#stock').innerHTML=cats.map(c=>`<h2>${esc(c)}</h2><div class="list">`+items.filter(i=>i.cat===c).map(i=>{
+    const s=status(i.id);
+    const sub=s.r>0?`~${fmtN(s.r)}/md · `+(s.s<=0?'ingen tilbage':`rækker til ${fmtDate(s.runout)}`):'Intet salg';
+    return `<button class="row" data-count="${esc(i.id)}"><div class="grow"><div class="name">${esc(i.name)}</div><div class="sub">${sub}</div>${s.level?`<span class="st ${s.level}">${ICON[s.level]}${s.label}</span>`:''}</div><div class="qty tnum${s.s<0?' neg':''}">${fmtN(s.s)}<small>${esc(i.unit||'stk')}</small></div></button>`;
+  }).join('')+'</div>').join('')||'<p class="muted">Ingen varer endnu.</p>';
+}
+let countId=null;
+function openCount(id){
+  countId=id; const it=itemById(id);
+  $('#countTitle').textContent=it.name;
+  $('#countSub').textContent=`Systemet siger ${fmtN(STOCK[id]||0)}. Skriv hvor mange I faktisk har.`;
+  $('#countQty').value=Math.max(0,STOCK[id]||0);
+  $('#countDlg').showModal(); setTimeout(()=>$('#countQty').select(),50);
+}
+$('#countDlg').addEventListener('close',()=>{
+  if($('#countDlg').returnValue!=='ok'||!countId) return;
+  const q=parseFloat($('#countQty').value); if(!(q>=0)) return;
+  const it=itemById(countId);
+  D.movements.push({id:uid(),date:today(),kind:'count',item:countId,qty:q,channel:'',customer:'',note:'Optælling',src:'manual'}); D.movements.sort(byDate);
+  commit(`Optælling: ${it.name} = ${fmtN(q)}`); toast(`${it.name} sat til ${fmtN(q)}`);
+});
+
+/* ---- Historik ---- */
+function renderHist(){
+  const q=$('#search').value.trim().toLowerCase();
+  const rows=D.movements.filter(m=>!q||[itemName(m.item),m.customer,m.note,m.channel].join(' ').toLowerCase().includes(q)).sort((a,b)=>byDate(b,a));
+  let html='',last='';
+  for(const m of rows.slice(0,histLimit)){
+    if(m.date!==last){ if(last) html+='</div>'; last=m.date; html+=`<div class="day">${m.date===today()?'I dag':new Date(m.date+'T12:00').toLocaleDateString('da-DK',{weekday:'long',day:'numeric',month:'long',year:m.date.slice(0,4)!==today().slice(0,4)?'numeric':undefined})}</div><div class="list">` }
+    const sign=m.kind==='in'?'+':m.kind==='count'?'=':'−';
+    const who=m.src==='shopify'?'Shopify':m.customer||(m.kind==='count'?'Optælling':'');
+    html+=`<div class="row"><div class="sign ${m.kind}">${sign}</div><div class="grow"><div class="name">${fmtN(+m.qty)} × ${esc(itemName(m.item))}</div>${who||m.date>today()?`<div class="sub">${esc(who)}${m.date>today()?' · planlagt':''}</div>`:''}</div><button class="iconbtn" data-del="${esc(m.id)}" aria-label="Slet"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button></div>`;
+  }
+  if(last) html+='</div>';
+  $('#hist').innerHTML=html||'<p class="muted" style="margin-top:16px">Intet fundet.</p>';
+  $('#histMore').hidden=rows.length<=histLimit;
+}
+
+/* ---- Indstillinger ---- */
+function renderSettings(){
+  $('#ghState').innerHTML=ghOn()?`Forbundet til <b>${esc(gh.owner)}/${esc(gh.repo)}</b>. Alt gemmes automatisk.`:'<span class="neg">Ikke forbundet.</span> Ændringer gemmes kun på denne enhed.';
+  if(!document.activeElement?.closest?.('#ghForm')){ $('#ghForm').open=!ghOn(); $('#ghOwner').value=gh?.owner||''; $('#ghRepo').value=gh?.repo||''; $('#ghToken').value=gh?.token?'••••••••••':'' }
+  const ss=D.settings.shopifySync;
+  $('#shopState').innerHTML=ss?.lastRun?`Hentes automatisk hver time (kl. 7–23). Sidst: ${fmtDate(ss.lastRun.slice(0,10))} kl. ${new Date(ss.lastRun).toLocaleTimeString('da-DK',{hour:'2-digit',minute:'2-digit'})}, +${ss.added||0} nye.`:'Hentes automatisk hver time, når Shopify er sat op i data-repoet (se README).';
+  if(document.activeElement?.closest?.('#itemsEdit')) return;
+  $('#itemsEdit').innerHTML=[...D.items].sort((a,b)=>catRank(a.cat)-catRank(b.cat)).map(i=>`<div class="row">
+    <div class="grow" style="min-width:150px"><input class="in" data-f="name" data-id="${esc(i.id)}" value="${esc(i.name)}" aria-label="Navn"><div class="sub" style="margin-top:4px">${esc(i.cat)}${i.kit?' · sæt: '+esc(Object.keys(i.consumes).map(itemName).join(' + ')):''}</div></div>
+    ${i.kit?'':`<label class="small muted" style="text-align:center">Pr. md<br><input class="in num-in tnum" type="number" step="any" min="0" data-f="perMonth" data-id="${esc(i.id)}" value="${i.perMonth??''}" placeholder="${fmtN(actualRate(i.id))}"></label>
+    <label class="small muted" style="text-align:center">Advar<br><input class="in num-in tnum" type="number" step="any" min="0" data-f="alert" data-id="${esc(i.id)}" value="${i.alert||''}" placeholder="0"></label>`}
+  </div>`).join('');
+}
+
+/* ============ Hændelser ============ */
+let toastT=null,undoFn=null;
+function toast(text,undo){$('#toastText').textContent=text;undoFn=undo||null;$('#toastUndo').hidden=!undo;$('#toast').classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>$('#toast').classList.remove('show'),undo?5000:3000)}
+$('#toastUndo').addEventListener('click',()=>{const f=undoFn;undoFn=null;$('#toast').classList.remove('show');f&&f()});
+
+document.addEventListener('click',e=>{
+  const t=e.target.closest('button'); if(!t) return;
+  if(t.dataset.kind){F.kind=t.dataset.kind;F.item=null;F.showAll=false;$('#qty').value=1;$('#who').value='';renderAdd();return}
+  if(t.dataset.item){F.item=t.dataset.item;renderAdd();return}
+  if(t.id==='moreBtn'){F.showAll=!F.showAll;renderAdd();return}
+  if(t.dataset.step){const q=$('#qty');q.value=Math.max(1,(parseFloat(q.value)||0)+ +t.dataset.step);renderAdd();return}
+  if(t.dataset.set){$('#qty').value=t.dataset.set;renderAdd();return}
+  if(t.dataset.cstep){const q=$('#countQty');q.value=Math.max(0,(parseFloat(q.value)||0)+ +t.dataset.cstep);return}
+  if(t.hasAttribute('data-who')){$('#who').value=$('#who').value===t.dataset.who?'':t.dataset.who;renderAdd();return}
+  if(t.id==='dateBtn'){F.dateOpen=true;renderAdd();$('#date').focus();try{$('#date').showPicker()}catch{}return}
+  if(t.id==='saveBtn'){save();return}
+  if(t.dataset.count){openCount(t.dataset.count);return}
+  if(t.dataset.del){remove(t.dataset.del);return}
+});
+$('#qty').addEventListener('input',renderAdd);
+$('#who').addEventListener('input',()=>$$('#whoChips .chip').forEach(c=>c.setAttribute('aria-pressed',c.dataset.who===$('#who').value)));
+$('#date').addEventListener('change',renderAdd);
+$('#search').addEventListener('input',()=>{histLimit=80;renderHist()});
+$('#histMore').addEventListener('click',()=>{histLimit+=150;renderHist()});
+document.addEventListener('change',e=>{
+  const t=e.target; if(!t.dataset.f) return;
+  const it=itemById(t.dataset.id), f=t.dataset.f;
+  if(f==='name'){ if(!t.value.trim()) return; it.name=t.value.trim() }
+  else it[f]=t.value===''?(f==='perMonth'?null:0):+t.value;
+  commit('Vare ændret: '+it.name,true);
+});
+$('#addItem').addEventListener('click',()=>{
+  const n=$('#newItem').value.trim(); if(!n){$('#newItem').focus();return}
+  const id=n.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,20)+'-'+uid().slice(-4);
+  D.items.push({id,name:n,cat:/matcha/i.test(n)?'Matcha':'Tilbehør',unit:'stk',consumes:{},alert:0,lead:30,perMonth:null,price:0,priceB2B:0,cost:0});
+  $('#newItem').value=''; commit('Ny vare: '+n,true); toast('Tilføjet: '+n);
+});
+$('#ghConnect').addEventListener('click',async()=>{
+  const tok=$('#ghToken').value.trim();
+  const next={owner:$('#ghOwner').value.trim(),repo:$('#ghRepo').value.trim(),branch:gh?.branch||'main',path:gh?.path||'data.json',token:tok.startsWith('•')?(gh?.token||''):tok};
+  if(!next.owner||!next.repo||!next.token){$('#ghMsg').innerHTML='<span class="neg">Udfyld alle tre felter.</span>';return}
+  const prev=gh; gh=next; $('#ghMsg').textContent='Tester…';
+  try{
+    const r=await ghGet(); lsSet(LS.gh,gh);
+    if(r.missing){ if(confirm('Der er ingen data.json i repoet. Upload de data, du ser nu?')){meta.sha=null;meta.dirty=true;meta.configDirty=true;meta.msg='Første upload';saveDraft();await push()} }
+    else await load();
+    $('#ghMsg').textContent=''; document.activeElement?.blur(); renderSettings(); toast('Forbundet');
+  }catch(e){gh=prev;$('#ghMsg').innerHTML=`<span class="neg">${esc(e.message)}</span>`}
+});
+$('#ghForget').addEventListener('click',()=>{if(!confirm('Fjern nøglen fra denne enhed?'))return;gh=null;lsSet(LS.gh,null);renderSettings();setSync('local','Ikke forbundet')});
+$('#shopNow').addEventListener('click',async()=>{
+  const msg=$('#shopMsg');
+  if(!ghOn()){msg.innerHTML='<span class="neg">Forbind til GitHub først.</span>';return}
+  const before=D.settings.shopifySync?.lastRun||''; $('#shopNow').disabled=true; msg.textContent='Starter…';
+  try{
+    const res=await fetch(repoUrl()+'/actions/workflows/shopify-sync.yml/dispatches',{method:'POST',headers:{...H(),'Content-Type':'application/json'},body:JSON.stringify({ref:gh.branch||'main'})});
+    if(res.status===401||res.status===403) throw new Error('Nøglen mangler "Actions: Read and write".');
+    if(res.status===404) throw new Error('Shopify-sync er ikke lagt i data-repoet endnu.');
+    if(!res.ok) throw new Error('GitHub-fejl '+res.status);
+    msg.textContent='Henter fra Shopify… (ca. 30 sek.)';
+    const t0=Date.now();
+    while(Date.now()-t0<180000){
+      await new Promise(r=>setTimeout(r,8000));
+      const r=await ghGet();
+      if((r.data?.settings?.shopifySync?.lastRun||'')>before){
+        D=meta.dirty?merge(r.data,D):r.data; meta.sha=r.sha; if(meta.dirty) push();
+        rebuild(); render(); msg.textContent=''; toast(`Shopify: ${D.settings.shopifySync.added||0} nye ordrelinjer`); return;
+      }
+    }
+    msg.textContent='Det tager længere tid end ventet. Se Actions i data-repoet.';
+  }catch(e){msg.innerHTML=`<span class="neg">${esc(e.message)}</span>`}
+  finally{$('#shopNow').disabled=false}
+});
+$('#dlJson').addEventListener('click',()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(D,null,1)],{type:'application/json'}));a.download='data.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)});
+$('#syncBtn').addEventListener('click',()=>{if(!ghOn()) location.hash='#indstillinger'; else if(meta.dirty) push(); else load()});
+window.addEventListener('hashchange',route);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&ghOn()&&!meta.dirty&&!saving) load(true)});
+
+$('#date').value=today();
+route();
+load();
+</script>
+</body>
+</html>
