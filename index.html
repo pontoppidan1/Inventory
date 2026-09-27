@@ -357,7 +357,12 @@ function ghErr(s){return s===401?'Nøglen virker ikke. Tjek at den er kopieret r
 async function ghGet(){
   const q='?ref='+encodeURIComponent(gh.branch||'main')+'&t='+Date.now();
   const res=await fetch(fileUrl()+q,{headers:H(),cache:'no-store'});
-  if(res.status===404) return {data:null,sha:null,missing:true};
+  if(res.status===404){
+    // GitHub svarer 404 både når filen mangler, og når nøglen ikke har adgang til repoet
+    const rr=await fetch(repoUrl(),{headers:H(),cache:'no-store'});
+    if(!rr.ok) throw new Error(`Nøglen har ikke adgang til ${gh.owner}/${gh.repo}. Tjek navnet, og at repoet er valgt under "Repository access" på nøglen.`);
+    return {data:null,sha:null,missing:true};
+  }
   if(!res.ok) throw new Error(ghErr(res.status));
   const j=await res.json(); let txt;
   if(j.content&&j.encoding==='base64') txt=b64dec(j.content);
@@ -603,7 +608,7 @@ $('#ghConnect').addEventListener('click',async()=>{
   const prev=gh; gh=next; $('#ghMsg').textContent='Tester…';
   try{
     const r=await ghGet(); lsSet(LS.gh,gh);
-    if(r.missing){ if(confirm('Der er ingen data.json i repoet. Upload de data, du ser nu?')){meta.sha=null;meta.dirty=true;meta.configDirty=true;meta.msg='Første upload';saveDraft();await push()} }
+    if(r.missing){ if(!D.movements.length){gh=prev;$('#ghMsg').innerHTML='<span class="neg">Der er ingen data.json i repoet. Upload den først.</span>';return} if(confirm('Der er ingen data.json i repoet. Upload de data, du ser nu?')){meta.sha=null;meta.dirty=true;meta.configDirty=true;meta.msg='Første upload';saveDraft();await push()} }
     else await load();
     $('#ghMsg').textContent=''; document.activeElement?.blur(); renderSettings(); toast('Forbundet');
   }catch(e){gh=prev;$('#ghMsg').innerHTML=`<span class="neg">${esc(e.message)}</span>`}
